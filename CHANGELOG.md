@@ -1,12 +1,11 @@
-## 0.7.0 [2022-01-16]
-- BREAKING: Increases minimum SDK to 2.17
-- BREAKING: Changes default background color from `ThemeData.backgroundColor`
-  to `ThemeData.colorScheme.background`
-- BREAKING: changes state type of `ActionSliderController` from `SliderMode`
-  to `ActionSliderControllerState`
+## 0.7.0 [2023-07-30]
+- BREAKING: increases minimum SDK to 2.17
+- BREAKING: changes default background color from `ThemeData.backgroundColor` to `ThemeData.cardColor`
+- BREAKING: changes state type of `ActionSliderController` from `SliderMode` to `ActionSliderControllerState`
 - adds `anchorPosition` and `allowedInterval` to `ActionSliderController`
 - adds `anchorPosition` and `allowedInterval` to `SliderState`
 - adds `ActionSliderController.dual`
+- closes [#6](https://github.com/splashbyte/action_slider/issues/6)
 
 ## 0.6.1 [2022-12-09]
 

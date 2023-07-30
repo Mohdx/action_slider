@@ -10,12 +10,12 @@ import 'package:flutter/material.dart';
 enum SliderBehavior { move, stretch }
 
 enum ThresholdType {
-  ///The action should be triggered as soon as the threshold is reached.
-  ///The slider does not have to be released for this.
+  /// The action is triggered as soon as the threshold is reached.
+  /// The slider does not have to be released for this.
   instant,
 
-  ///The action should only be triggered when the threshold is reached
-  ///and the slider is released.
+  /// The action is triggered when the threshold is reached
+  /// and the slider is released.
   release,
 }
 
@@ -23,7 +23,7 @@ typedef BackgroundBuilder = Widget Function(
     BuildContext, ActionSliderState, Widget?);
 typedef ForegroundBuilder = Widget Function(
     BuildContext, ActionSliderState, Widget?);
-typedef Action = Function(ActionSliderController controller);
+typedef SliderAction = Function(ActionSliderController controller);
 typedef StateChangeCallback = Function(ActionSliderState? oldState,
     ActionSliderState state, ActionSliderController controller);
 typedef TapCallback = Function(ActionSliderController controller, double pos);
@@ -180,7 +180,7 @@ class ActionSlider extends StatefulWidget {
   ///Here you should call the loading, success and failure methods of the
   ///[controller] for controlling the further behaviour/animations of the
   ///slider.
-  final Action? action;
+  final SliderAction? action;
 
   ///Callback when the [ActionSliderState] changes.
   ///With this you can define more individual behavior than with [action], if it is necessary.
@@ -255,7 +255,9 @@ class ActionSlider extends StatefulWidget {
         super(key: key);
 
   static _defaultOnTap(ActionSliderController c, double pos) =>
-      c.jump(pos < c.value.anchorPosition ? -0.3 : 0.3);
+      c.jump(pos < c.value.anchorPosition
+          ? max(-0.3, -c.value.anchorPosition)
+          : min(0.3, 1 - c.value.anchorPosition));
 
   static ActionSliderController _controllerBuilder() =>
       ActionSliderController();
@@ -377,8 +379,8 @@ class ActionSlider extends StatefulWidget {
     this.height = 65.0,
     double borderWidth = 5.0,
     bool rolling = false,
-    Action? startAction,
-    Action? endAction,
+    SliderAction? startAction,
+    SliderAction? endAction,
     this.onTap = _defaultOnTap,
     this.controller,
     this.width,
@@ -450,8 +452,8 @@ class ActionSlider extends StatefulWidget {
       ActionSliderController.dual();
 
   static StateChangeCallback _dualChangeCallback(
-      Action? startAction,
-      Action? endAction,
+      SliderAction? startAction,
+      SliderAction? endAction,
       StateChangeCallback? callback,
       ThresholdType thresholdType,
       double startThreshold,
@@ -484,17 +486,11 @@ class ActionSlider extends StatefulWidget {
     };
   }
 
-  static BackgroundBuilder _standardOuterBackgroundBuilder(
-    BorderRadius backgroundBorderRadius,
-    Color? backgroundColor,
-    List<BoxShadow> boxShadow,
-    double? width,
-  ) {
-    return (context, state, child) => Container(
-    width: width,
+  Widget _standardOuterBackgroundBuilder(
+      BuildContext context, ActionSliderState state, Widget? child) {
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color:
-            backgroundColor ?? Theme.of(context).colorScheme.background,
+        color: backgroundColor ?? Theme.of(context).cardColor,
         borderRadius: backgroundBorderRadius,
         boxShadow: boxShadow,
       ),
@@ -534,43 +530,52 @@ class ActionSlider extends StatefulWidget {
 
   static Widget _standardDualBackgroundBuilder(BuildContext context,
       ActionSliderState state, Widget? startChild, Widget? endChild) {
-    Alignment clipAlignment = state.direction == TextDirection.rtl
-        ? Alignment.centerLeft
-        : Alignment.centerRight;
-    Alignment startClipAlignment = state.direction == TextDirection.rtl
-        ? Alignment.centerRight
-        : Alignment.centerLeft;
-    double relativeToggleWidth = state.toggleSize.height /
-        (state.standardSize.width - state.toggleSize.height * 2);
+    Alignment startAlignment =
+        AlignmentDirectional.centerStart.resolve(state.direction);
+    Alignment endAlignment =
+        AlignmentDirectional.centerEnd.resolve(state.direction);
+    double innerWidth = state.standardSize.width -
+        state.toggleSize.width -
+        state.toggleMargin.horizontal;
+    final startSize = Size(
+        innerWidth * state.anchorPosition + state.toggleSize.width / 2,
+        state.toggleSize.height);
+    final endSize = Size(
+        state.standardSize.width -
+            state.toggleMargin.horizontal -
+            startSize.width,
+        state.toggleSize.height);
     return Row(
       textDirection: state.direction,
       children: [
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: state.toggleSize.height / 2,
-              right: state.toggleSize.height / 2,
-            ),
-            child: ClipRect(
-              child: OverflowBox(
-                maxWidth:
-                    state.standardSize.width / 2 - state.toggleSize.height,
-                maxHeight: state.toggleSize.height,
-                minWidth:
-                    state.standardSize.width / 2 - state.toggleSize.height,
-                minHeight: state.toggleSize.height,
-                child: Align(
-                  alignment: startClipAlignment,
-                  child: ClipRect(
-                    child: Align(
-                      alignment: startClipAlignment,
-                      widthFactor: 1.0 -
-                          ((state.anchorPosition -
-                                      0.5 * relativeToggleWidth -
-                                      state.position) /
-                                  (state.anchorPosition -
-                                      0.5 * relativeToggleWidth))
-                              .clamp(0.0, 1.0),
+        SizedBox(
+          width: (state.size.width -
+                      state.toggleSize.width -
+                      state.toggleMargin.horizontal) *
+                  state.anchorPosition +
+              state.toggleSize.width / 2,
+          child: ClipRect(
+            child: OverflowBox(
+              maxWidth: startSize.width,
+              maxHeight: startSize.height,
+              minWidth: startSize.width,
+              minHeight: startSize.height,
+              child: Align(
+                alignment: startAlignment,
+                child: ClipRect(
+                  child: Align(
+                    alignment: startAlignment,
+                    widthFactor: 1.0 -
+                        ((1.0 - state.position / state.anchorPosition) *
+                                (1.0 -
+                                    0.5 *
+                                        state.toggleSize.width /
+                                        startSize.width))
+                            .clamp(0.0, 1.0),
+                    child: Padding(
+                      padding: EdgeInsetsDirectional.only(
+                              end: state.toggleSize.width / 2)
+                          .resolve(state.direction),
                       child: Center(child: startChild),
                     ),
                   ),
@@ -580,30 +585,29 @@ class ActionSlider extends StatefulWidget {
           ),
         ),
         Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: state.toggleSize.width / 2,
-              right: state.toggleSize.width / 2,
-            ),
-            child: ClipRect(
-              child: OverflowBox(
-                maxWidth: state.standardSize.width / 2 - state.toggleSize.width,
-                maxHeight: state.toggleSize.height,
-                minWidth: state.standardSize.width / 2 - state.toggleSize.width,
-                minHeight: state.toggleSize.height,
-                child: Align(
-                  alignment: clipAlignment,
-                  child: ClipRect(
-                    child: Align(
-                      alignment: clipAlignment,
-                      widthFactor: 1.0 -
-                          ((state.position -
-                                      (state.anchorPosition +
-                                          relativeToggleWidth * 0.5)) /
-                                  (1.0 -
-                                      (state.anchorPosition +
-                                          relativeToggleWidth * 0.5)))
-                              .clamp(0.0, 1.0),
+          child: ClipRect(
+            child: OverflowBox(
+              maxWidth: endSize.width,
+              maxHeight: endSize.height,
+              minWidth: endSize.width,
+              minHeight: endSize.height,
+              child: Align(
+                alignment: endAlignment,
+                child: ClipRect(
+                  child: Align(
+                    alignment: endAlignment,
+                    widthFactor: 1.0 -
+                        (((state.position - state.anchorPosition) /
+                                    (1.0 - state.anchorPosition)) *
+                                (1.0 -
+                                    0.5 *
+                                        state.toggleSize.width /
+                                        endSize.width))
+                            .clamp(0.0, 1.0),
+                    child: Padding(
+                      padding: EdgeInsetsDirectional.only(
+                              start: state.toggleSize.width / 2)
+                          .resolve(state.direction),
                       child: Center(child: endChild),
                     ),
                   ),
@@ -683,7 +687,7 @@ class ActionSlider extends StatefulWidget {
   }
 
   @override
-  _ActionSliderState createState() => _ActionSliderState();
+  State<ActionSlider> createState() => _ActionSliderState();
 }
 
 class _ActionSliderState extends State<ActionSlider>
@@ -869,6 +873,7 @@ class _ActionSliderState extends State<ActionSlider>
       allowedInterval: _state.allowedInterval,
       toggleSize: oldActionSliderState.toggleSize,
       direction: oldActionSliderState.direction,
+      toggleMargin: widget.toggleMargin,
     );
     if (_lastActionSliderState != actionSliderState) {
       widget.stateChangeCallback!
@@ -892,6 +897,7 @@ class _ActionSliderState extends State<ActionSlider>
         final standardWidth =
             maxWidth - widget.toggleWidth - widget.toggleMargin.horizontal;
         return AnimatedBuilder(
+          animation: _loadingAnimation,
           builder: (context, child) {
             final width = maxWidth - (_loadingAnimation.value * standardWidth);
             final backgroundWidth =
@@ -938,6 +944,7 @@ class _ActionSliderState extends State<ActionSlider>
               allowedInterval: _state.allowedInterval,
               toggleSize: Size(toggleWidth, toggleHeight),
               direction: direction,
+              toggleMargin: widget.toggleMargin,
             );
 
             _changeState(_state, actionSliderState, setState: false);
@@ -951,13 +958,10 @@ class _ActionSliderState extends State<ActionSlider>
               child: SizedBox.fromSize(
                 size: actionSliderState.size,
                 child: Stack(
+                  fit: StackFit.passthrough,
                   children: [
                     (widget.outerBackgroundBuilder ??
-                        ActionSlider._standardOuterBackgroundBuilder(
-                            widget.backgroundBorderRadius,
-                            widget.backgroundColor,
-                            widget.boxShadow,
-                            widget.width))(
+                        widget._standardOuterBackgroundBuilder)(
                       context,
                       actionSliderState,
                       widget.outerBackgroundChild,
@@ -967,11 +971,14 @@ class _ActionSliderState extends State<ActionSlider>
                       child: Stack(children: [
                         if (widget.backgroundBuilder != null)
                           Positioned.fill(
-                            child: Builder(
-                              builder: (context) => widget.backgroundBuilder!(
-                                context,
-                                actionSliderState,
-                                widget.backgroundChild,
+                            child: Opacity(
+                              opacity: 1 - _loadingAnimation.value,
+                              child: Builder(
+                                builder: (context) => widget.backgroundBuilder!(
+                                  context,
+                                  actionSliderState,
+                                  widget.backgroundChild,
+                                ),
                               ),
                             ),
                           ),
@@ -1063,7 +1070,6 @@ class _ActionSliderState extends State<ActionSlider>
               ),
             );
           },
-          animation: _loadingAnimation,
         );
       },
     );

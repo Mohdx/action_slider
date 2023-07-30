@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:action_slider/action_slider.dart';
 import 'package:flutter/material.dart';
 
@@ -44,43 +46,41 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            ActionSlider.dual(
-              width: 300.0,
-              startChild: const Text('Start'),
-              endChild: const Text('End'),
-              startAction: (controller) async {
-                controller.loading(); //starts loading animation
-                await Future.delayed(const Duration(seconds: 3));
-                controller.success(); //starts success animation
-                await Future.delayed(const Duration(seconds: 1));
-                controller.reset(); //resets the slider
-              },
-              endAction: (controller) async {
-                controller.loading(); //starts loading animation
-                await Future.delayed(const Duration(seconds: 3));
-                controller.success(); //starts success animation
-                await Future.delayed(const Duration(seconds: 1));
-                controller.reset(); //resets the slider
-              },
-            ),
-            const SizedBox(height: 24.0),
-            ActionSlider.standard(
-              width: 300.0,
-              child: const Text('Slide to confirm'),
-              action: (controller) async {
-                controller.loading(); //starts loading animation
-                await Future.delayed(const Duration(seconds: 3));
-                controller.success(); //starts success animation
-                await Future.delayed(const Duration(seconds: 1));
-                controller.reset(); //resets the slider
-              },
-              direction: TextDirection.rtl,
+            DefaultTextStyle.merge(
+              style: const TextStyle(color: Colors.white),
+              child: ActionSlider.dual(
+                backgroundBorderRadius: BorderRadius.circular(10.0),
+                foregroundBorderRadius: BorderRadius.circular(10.0),
+                width: 300.0,
+                backgroundColor: Colors.black,
+                startChild: const Text('Start'),
+                endChild: const Text('End'),
+                icon: Padding(
+                  padding: const EdgeInsets.only(right: 2.0),
+                  child: Transform.rotate(
+                      angle: 0.5 * pi,
+                      child: const Icon(Icons.unfold_more_rounded, size: 28.0)),
+                ),
+                startAction: (controller) async {
+                  controller.loading(); //starts loading animation
+                  await Future.delayed(const Duration(seconds: 3));
+                  controller.success(); //starts success animation
+                  await Future.delayed(const Duration(seconds: 1));
+                  controller.reset(); //resets the slider
+                },
+                endAction: (controller) async {
+                  controller.loading(); //starts loading animation
+                  await Future.delayed(const Duration(seconds: 3));
+                  controller.success(); //starts success animation
+                  await Future.delayed(const Duration(seconds: 1));
+                  controller.reset(); //resets the slider
+                },
+              ),
             ),
             const SizedBox(height: 24.0),
             ActionSlider.standard(
               sliderBehavior: SliderBehavior.stretch,
               width: 300.0,
-              child: const Text('Slide to confirm'),
               backgroundColor: Colors.white,
               toggleColor: Colors.lightGreenAccent,
               action: (controller) async {
@@ -90,13 +90,25 @@ class _MyHomePageState extends State<MyHomePage> {
                 await Future.delayed(const Duration(seconds: 1));
                 controller.reset(); //resets the slider
               },
+              child: const Text('Slide to confirm'),
+            ),
+            const SizedBox(height: 24.0),
+            ActionSlider.standard(
+              width: 300.0,
+              action: (controller) async {
+                controller.loading(); //starts loading animation
+                await Future.delayed(const Duration(seconds: 3));
+                controller.success(); //starts success animation
+                await Future.delayed(const Duration(seconds: 1));
+                controller.reset(); //resets the slider
+              },
+              direction: TextDirection.rtl,
+              child: const Text('Slide to confirm'),
             ),
             const SizedBox(height: 24.0),
             ActionSlider.standard(
               rolling: true,
               width: 300.0,
-              child: const Text('Rolling slider',
-                  style: TextStyle(color: Colors.white)),
               backgroundColor: Colors.black,
               reverseSlideAnimationCurve: Curves.easeInOut,
               reverseSlideAnimationDuration: const Duration(milliseconds: 500),
@@ -109,13 +121,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 await Future.delayed(const Duration(seconds: 1));
                 controller.reset(); //resets the slider
               },
+              child: const Text('Rolling slider',
+                  style: TextStyle(color: Colors.white)),
             ),
             const SizedBox(height: 24.0),
             ActionSlider.standard(
               sliderBehavior: SliderBehavior.stretch,
               rolling: true,
               width: 300.0,
-              child: const Text('Swipe right'),
               backgroundColor: Colors.white,
               toggleColor: Colors.amber,
               iconAlignment: Alignment.centerRight,
@@ -139,6 +152,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 await Future.delayed(const Duration(seconds: 1));
                 controller.reset(); //resets the slider
               },
+              child: const Text('Swipe right'),
             ),
             const SizedBox(height: 24.0),
             ActionSlider.custom(
